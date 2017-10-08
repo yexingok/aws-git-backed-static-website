@@ -212,6 +212,7 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
+        HttpVersion: http2
         Aliases:
           - !Ref DomainName
         DefaultRootObject: index.html
@@ -252,6 +253,7 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
+        HttpVersion: http2
         Aliases:
           - !If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket]
         PriceClass: PriceClass_100
