@@ -46,14 +46,22 @@ Parameters:
     AllowedPattern: "[a-z0-9:/-]+"
     ConstraintDescription: "Provide a valid domain name using only lowercase letters, numbers, and dash (-)"
 
+  CodePiplelineBucketExpireInDays:
+    Type: Number
+    Description: "The Expire days before the temp builds artifical in codepipleline bucket to be removed"
+    Default: 60
+    MinValue: 1
+    MaxValue: 65535
+    ConstraintDescription: "Provide number of days, default: 60 days"
+
   DefaultTTL:
     Type: Number
-    Description: "TTL in seconds"
-    Default: 30
+    Description: "Default Cloudfront distribution TTL in seconds"
+    Default: 600
 
   MinimumTTL:
     Description: "Minimum cache lifetime in seconds for the CloudFront distribution"
-    Default: 5
+    Default: 300
     Type: Number
 
   PriceClass:
@@ -164,7 +172,7 @@ Resources:
       AccessControl: PublicRead
       WebsiteConfiguration:
         IndexDocument: index.html
-        ErrorDocument: error.html
+        ErrorDocument: 404.html
       # logs.example.com/logs/s3/example.com/
       LoggingConfiguration:
         DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
@@ -177,7 +185,6 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: !Sub "www.${DomainName}"
-      AccessControl: BucketOwnerFullControl
       # logs.example.com/logs/s3/www.example.com/
       LoggingConfiguration:
         DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
@@ -194,8 +201,12 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: !Sub "codepipeline.${DomainName}"
-      VersioningConfiguration:
-        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+            - Id: ExpireAfterDays
+              Prefix: /
+              Status: Enabled
+              ExpirationInDays: !Ref CodePiplelineBucketExpireInDays
     DeletionPolicy: Retain
 
   # Cert#ificate for HTTPS accesss through CloudFront
@@ -393,8 +404,8 @@ Resources:
       Description: !Sub "Static site generator for ${DomainName}"
       #TBD: Some static site generators might need more permissions
       Role: !GetAtt LambdaExecutionRole.Arn
-      MemorySize: 1536
-      Timeout: 300
+      MemorySize: 512
+      Timeout: 100
       Runtime: !Ref GeneratorLambdaFunctionRuntime
       Handler: !Ref GeneratorLambdaFunctionHandler
       Code:
@@ -406,8 +417,8 @@ Resources:
     Properties:
       Description:  !Sub "Copy Git branch contents to S3 bucket for ${DomainName}"
       Role: !GetAtt LambdaExecutionRole.Arn
-      MemorySize: 1536
-      Timeout: 300
+      MemorySize: 512
+      Timeout: 100
       Runtime: python2.7
       Handler: index.handler
       Code:
