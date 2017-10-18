@@ -37,14 +37,14 @@ Parameters:
     ConstraintDescription: "Provide a valid email address"
 
    # AWS Certificate Manager arn string generated from us-east-1, this will be used with cloudfront as for the moment it only support certs created from us-east-1 region.
-   # example: arn:aws:acm:us-east-1:348104523372:certificate/e42s46ea-973m-46ad-8a1f-85d82e1299ac
+   # example: arn:aws:acm:us-east-1:348104000000:certificate/e4220000-973m-46ad-8a1f-85d82e1299ac
   AWSCertificateArn:
     Type: String
     Description: "The SSL certificate arn:aws:acm string created from AWS Certificate Manger us-east-1"
     MinLength: 30
     MaxLength: 253
     AllowedPattern: "[a-z0-9:/-]+"
-    ConstraintDescription: "Provide a valid domain name using only lowercase letters, numbers, and dash (-)"
+    ConstraintDescription: "Provide a valid aws acm resources arn using only lowercase letters, numbers, and dash (-)"
 
   CodePiplelineBucketExpireInDays:
     Type: Number
@@ -161,6 +161,13 @@ Resources:
     Properties:
       BucketName: !Sub "logs.${DomainName}"
       AccessControl: LogDeliveryWrite
+      # for personally site, we do not need to keep access log for more than 180 days.
+      LifecycleConfiguration:
+        Rules:
+            - Id: ExpireAfterDays
+              Prefix: /
+              Status: Enabled
+              ExpirationInDays: 180
     DeletionPolicy: Retain
 
   # Bucket for site content: example.com
