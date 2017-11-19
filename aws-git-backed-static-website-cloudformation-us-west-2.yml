@@ -274,7 +274,7 @@ Resources:
         HttpVersion: http2
         Aliases:
           - !If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket]
-        PriceClass: PriceClass_200
+        PriceClass: !Ref PriceClass
         Origins:
           -
             DomainName: !Join ["", [!If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket], ".", !FindInMap [RegionMap, !Ref "AWS::Region", websiteendpoint]]]
