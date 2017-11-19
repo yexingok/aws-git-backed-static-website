@@ -5,23 +5,22 @@ Description: |
   Static web site stack including:
   * CodeCommit Git repository
   * S3 bucket for web site content
-  * Redirect from "www." to base domain
   * Access logs written to logs bucket
   * ACM Certificate for SSL (Need to provide the ARN string from us-east-1 region)
   * CloudFront distributions for website https access
-  * Route 53 hosted zone with DNS entries
   * CodePipeline (source CodeCommit, invoke Lambda functions)
   * S3 bucket for CodePipeline artifacts
   * AWS Lambda function(s) to generate static website from Git contents
   * AWS Lambda function to copy generated website to website S3 bucket
   * SNS topic for CodeCommit Git change notifications
   * Email address subscribed to SNS notification topic
+  * After cloudformation finish, setup CNAME record with your DNS to Cloudformation DNS, eg:  blog.exmaple.com CNAME d21ie9f4oh7pip.cloudfront.net 
 
 Parameters:
   # Domain: example.com
   DomainName:
     Type: String
-    Description: "The base domain name for the web site (no 'www')"
+    Description: "The sub domain name for the web site, eg: blog.example.com"
     MinLength: 4
     MaxLength: 253
     AllowedPattern: "[a-z0-9]+[-.a-z0-9]*(\\.[a-z][a-z]+)+"
@@ -130,11 +129,6 @@ Parameters:
     Type: String
     Default: ""
 
-  PreExistingRedirectBucket:
-    Description: "Optional name of pre-existing redirect bucket. Leave empty to have redirect bucket created and managed by this stack."
-    Type: String
-    Default: ""
-
   PreExistingLogsBucket:
     Description: "Optional name of pre-existing access logs bucket. Leave empty to have access logs bucket created and managed by this stack."
     Type: String
@@ -149,7 +143,6 @@ Conditions:
   NeedsNewGitRepository: !Equals [!Ref PreExistingGitRepository, ""]
   NeedsNewHostedZone: !Equals [!Ref PreExistingHostedZoneDomain, ""]
   NeedsNewSiteBucket: !Equals [!Ref PreExistingSiteBucket, ""]
-  NeedsNewRedirectBucket: !Equals [!Ref PreExistingRedirectBucket, ""]
   NeedsNewLogsBucket: !Equals [!Ref PreExistingLogsBucket, ""]
   NeedsNewCodePipelineBucket: !Equals [!Ref PreExistingCodePipelineBucket, ""]
 
@@ -168,7 +161,7 @@ Resources:
               Prefix: /
               Status: Enabled
               ExpirationInDays: 180
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
 
   # Bucket for site content: example.com
   SiteBucket:
@@ -184,22 +177,6 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
         LogFilePrefix: !Sub "logs/s3/${DomainName}/"
-    DeletionPolicy: Retain
-
-  # Bucket to redirect to example.com: www.example.com
-  RedirectBucket:
-    Condition: NeedsNewRedirectBucket
-    Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: !Sub "www.${DomainName}"
-      # logs.example.com/logs/s3/www.example.com/
-      LoggingConfiguration:
-        DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
-        LogFilePrefix: !Sub "logs/s3/www.${DomainName}/"
-      WebsiteConfiguration:
-        RedirectAllRequestsTo:
-          HostName: !Ref DomainName
-          Protocol: https
     DeletionPolicy: Delete
 
   # Bucket for CodePipeline artifact storage: codepipeline.example.com
@@ -214,7 +191,7 @@ Resources:
               Prefix: /
               Status: Enabled
               ExpirationInDays: !Ref CodePiplelineBucketExpireInDays
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
 
   # Cert#ificate for HTTPS accesss through CloudFront
   #Certificate:
@@ -265,75 +242,6 @@ Resources:
           AcmCertificateArn: !Sub "${AWSCertificateArn}"
           SslSupportMethod: sni-only
 
-  # CDN serves S3 content over HTTPS for www.example.com
-  RedirectCloudFrontDistribution:
-    Type: "AWS::CloudFront::Distribution"
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        HttpVersion: http2
-        Aliases:
-          - !If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket]
-        PriceClass: PriceClass_200
-        Origins:
-          -
-            DomainName: !Join ["", [!If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket], ".", !FindInMap [RegionMap, !Ref "AWS::Region", websiteendpoint]]]
-            Id: RedirectS3Origin
-            CustomOriginConfig:
-              HTTPPort: 80
-              HTTPSPort: 443
-              OriginProtocolPolicy: http-only
-        DefaultCacheBehavior:
-          TargetOriginId: RedirectS3Origin
-          AllowedMethods:
-            - GET
-            - HEAD
-          DefaultTTL: !Ref DefaultTTL
-          MinTTL: !Ref MinimumTTL
-          ForwardedValues:
-            QueryString: false
-            Cookies:
-             Forward: none
-          ViewerProtocolPolicy: allow-all
-        # logs.example.com/logs/cloudfront/www.example.com/
-        Logging:
-          Bucket: !Join ["", [!If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket], ".s3.amazonaws.com"]]
-          Prefix: !Sub "logs/cloudfront/www.${DomainName}/"
-          IncludeCookies: false
-        ViewerCertificate:
-          AcmCertificateArn: !Sub "${AWSCertificateArn}"
-          SslSupportMethod: sni-only
-
-  # DNS: example.com, www.example.com
-  Route53HostedZone:
-    Condition: NeedsNewHostedZone
-    Type: "AWS::Route53::HostedZone"
-    Properties:
-      HostedZoneConfig:
-        Comment: !Sub "Created by CloudFormation stack: ${AWS::StackName}"
-      Name: !Ref DomainName
-    DeletionPolicy: Retain
-  Route53RecordSetGroup:
-    Type: "AWS::Route53::RecordSetGroup"
-    Properties:
-      HostedZoneId: !If [NeedsNewHostedZone, !Ref Route53HostedZone, !Ref "AWS::NoValue"]
-      HostedZoneName: !If [NeedsNewHostedZone, !Ref "AWS::NoValue", !Sub "${PreExistingHostedZoneDomain}."]
-      RecordSets:
-        # example.com
-        - Name: !Sub "${DomainName}."
-          Type: A
-          # Resolve to CloudFront distribution
-          AliasTarget:
-            HostedZoneId: Z2FDTNDATAQYW2 # CloudFront
-            DNSName: !GetAtt CloudFrontDistribution.DomainName
-        # www.example.com
-        - Name: !Sub "www.${DomainName}."
-          Type: A
-          # Resolve to Redirect CloudFront distribution
-          AliasTarget:
-            HostedZoneId: Z2FDTNDATAQYW2 # CloudFront
-            DNSName: !GetAtt RedirectCloudFrontDistribution.DomainName
-
   # SNS topic for Git repository activity. Email subscription
   NotificationTopic:
     Type: "AWS::SNS::Topic"
@@ -355,7 +263,7 @@ Resources:
           DestinationArn: !Ref NotificationTopic
           Events:
             - all
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
 
   # IAM info for AWS Lambda functions
   LambdaExecutionRole:
@@ -555,25 +463,17 @@ Outputs:
   DomainName:
     Description: Domain name
     Value: !Ref DomainName
-  RedirectDomainName:
-    Description: Redirect hostname
-    Value: !If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket]
-  SiteBucket:
-    Value: !If [NeedsNewSiteBucket, !Ref SiteBucket, !Ref PreExistingSiteBucket]
-  RedirectBucket:
-    Value: !If [NeedsNewRedirectBucket, !Ref RedirectBucket, !Ref PreExistingRedirectBucket]
-  LogsBucket:
-    Description: S3 Bucket with access logs
-    Value: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
-  HostedZoneId:
-    Description: Route 53 Hosted Zone id
-    Value: !If [NeedsNewHostedZone, !Ref Route53HostedZone, "N/A"]
+  CloudFrontDomainURL:
+    Description: Setup your domain CNAME this CloudFront distribution domain from your DNS
+    Value: !GetAtt CloudFrontDistribution.DomainName
   CloudFrontDomain:
     Description: CloudFront distribution domain name
     Value: !Ref CloudFrontDistribution
-  RedirectCloudFrontDomain:
-    Description: Redirect CloudFront distribution domain name
-    Value: !Ref RedirectCloudFrontDistribution
+  SiteBucket:
+    Value: !If [NeedsNewSiteBucket, !Ref SiteBucket, !Ref PreExistingSiteBucket]
+  LogsBucket:
+    Description: S3 Bucket with access logs
+    Value: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
   CodePipelineArn:
     Description: CodePipeline ARN
     Value: !Ref CodePipeline
@@ -621,8 +521,6 @@ Metadata:
           default: PreExisting Resources To Use (Leave empty for stack to create and manage)
         Parameters:
           - PreExistingGitRepository
-          - PreExistingHostedZoneDomain
           - PreExistingSiteBucket
-          - PreExistingRedirectBucket
           - PreExistingLogsBucket
           - PreExistingCodePipelineBucket

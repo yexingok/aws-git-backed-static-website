@@ -1,13 +1,13 @@
 #!/bin/bash
 
-domain=example.com
-email=email@your_email.com
+domain=blog.example.com
+email=abc@example.com
 # run request-ssl-cert.sh to get the arn:aws string 
-cert=arn:aws:acm:us-east-1:xxxxx:certificate/fffffff-973f-46ad-8a1d-85d02e1299ac
+cert=arn:aws:acm:us-east-1:xxxxxx:certificate/aabbccdd-abcd-cded-cdcc-ecb8537293e3
 
 region=us-west-2
-template=aws-git-backed-static-website-cloudformation-us-west-2.yml
-stackname=${domain/./-}-$(date +%Y%m%d-%H%M%S)
+template=single-dns-blog.yml
+stackname=${domain//./-}-$(date +%Y%m%d-%H%M%S)
 
 aws cloudformation create-stack \
   --region "$region" \
