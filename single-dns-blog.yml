@@ -161,7 +161,7 @@ Resources:
               Prefix: /
               Status: Enabled
               ExpirationInDays: 180
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
 
   # Bucket for site content: example.com
   SiteBucket:
@@ -177,7 +177,7 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
         LogFilePrefix: !Sub "logs/s3/${DomainName}/"
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
 
   # Bucket for CodePipeline artifact storage: codepipeline.example.com
   CodePipelineBucket:
@@ -191,7 +191,7 @@ Resources:
               Prefix: /
               Status: Enabled
               ExpirationInDays: !Ref CodePiplelineBucketExpireInDays
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
 
   # Cert#ificate for HTTPS accesss through CloudFront
   #Certificate:
@@ -263,7 +263,7 @@ Resources:
           DestinationArn: !Ref NotificationTopic
           Events:
             - all
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
 
   # IAM info for AWS Lambda functions
   LambdaExecutionRole:
