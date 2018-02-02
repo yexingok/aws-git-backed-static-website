@@ -195,7 +195,7 @@ Resources:
       # logs.example.com/logs/s3/www.example.com/
       LoggingConfiguration:
         DestinationBucketName: !If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket]
-        LogFilePrefix: !Sub "logs/s3/www.${DomainName}/"
+        LogFilePrefix: !Sub "logs/s3/${DomainName}/"
       WebsiteConfiguration:
         RedirectAllRequestsTo:
           HostName: !Ref DomainName
@@ -298,7 +298,7 @@ Resources:
         # logs.example.com/logs/cloudfront/www.example.com/
         Logging:
           Bucket: !Join ["", [!If [NeedsNewLogsBucket, !Ref LogsBucket, !Ref PreExistingLogsBucket], ".s3.amazonaws.com"]]
-          Prefix: !Sub "logs/cloudfront/www.${DomainName}/"
+          Prefix: !Sub "logs/cloudfront/${DomainName}/"
           IncludeCookies: false
         ViewerCertificate:
           AcmCertificateArn: !Sub "${AWSCertificateArn}"

@@ -9,7 +9,7 @@ region=us-west-2
 template=aws-git-backed-static-website-cloudformation-us-west-2.yml
 stackname=${domain/./-}-$(date +%Y%m%d-%H%M%S)
 
-aws cloudformation create-stack \
+aws --profile yx cloudformation create-stack \
   --region "$region" \
   --stack-name "$stackname" \
   --capabilities CAPABILITY_IAM \
