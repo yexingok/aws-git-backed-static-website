@@ -54,6 +54,14 @@ Parameters:
     MaxValue: 65535
     ConstraintDescription: "Provide number of days, default: 60 days"
 
+  LogBucketExpireInDays:
+    Type: Number
+    Description: "The Expire days before the Logs got removed from the LogBucdekt"
+    Default: 180
+    MinValue: 1
+    MaxValue: 65535
+    ConstraintDescription: "Provide number of days, default: 180 days"
+
   DefaultTTL:
     Type: Number
     Description: "Default Cloudfront distribution TTL in seconds"
@@ -167,7 +175,7 @@ Resources:
             - Id: ExpireAfterDays
               Prefix: /
               Status: Enabled
-              ExpirationInDays: 180
+              ExpirationInDays: !Ref LogBucketExpireInDays
     DeletionPolicy: Retain
 
   # Bucket for site content: example.com
