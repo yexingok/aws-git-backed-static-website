@@ -9,7 +9,7 @@ region=us-west-2
 template=single-dns-blog.yml
 stackname=${domain//./-}-$(date +%Y%m%d-%H%M%S)
 
-aws cloudformation create-stack \
+aws --profile yx cloudformation create-stack \
   --region "$region" \
   --stack-name "$stackname" \
   --capabilities CAPABILITY_IAM \
