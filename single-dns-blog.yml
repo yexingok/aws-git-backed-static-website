@@ -88,7 +88,7 @@ Parameters:
   GeneratorLambdaFunctionS3Key:
     Type: String
     Description: "S3 key containing ZIP of AWS Lambda function (static site generator)"
-    Default: "lambda/static-site-generator-hugo-0.29.zip"
+    Default: "lambda/static-site-generator-hugo-0.36.zip"
 
   GeneratorLambdaFunctionRuntime:
     Type: String
@@ -120,7 +120,7 @@ Parameters:
   SyncLambdaFunctionS3Key:
     Type: String
     Description: "S3 key containing ZIP of AWS Lambda function (sync to S3)"
-    Default: "lambda/aws-lambda-git-backed-static-website.zip"
+    Default: "lambda/aws-lambda.zip"
 
   PreExistingGitRepository:
     Description: "Optional Git repository name for pre-existing CodeCommit repository. Leave empty to have CodeCommit Repository created and managed by this stack."
@@ -327,7 +327,7 @@ Resources:
       Description: !Sub "Static site generator for ${DomainName}"
       #TBD: Some static site generators might need more permissions
       Role: !GetAtt LambdaExecutionRole.Arn
-      MemorySize: 512
+      MemorySize: 1536
       Timeout: 100
       Runtime: !Ref GeneratorLambdaFunctionRuntime
       Handler: !Ref GeneratorLambdaFunctionHandler
@@ -340,7 +340,7 @@ Resources:
     Properties:
       Description:  !Sub "Copy Git branch contents to S3 bucket for ${DomainName}"
       Role: !GetAtt LambdaExecutionRole.Arn
-      MemorySize: 512
+      MemorySize: 1536
       Timeout: 100
       Runtime: python2.7
       Handler: index.handler
