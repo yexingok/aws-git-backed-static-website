@@ -206,3 +206,13 @@ versioned codepipeline bucket.
     #aws codecommit delete-repository \
       --region "$region" \
       --repository-name "$domain"
+
+### Request a new AWS SSL:
+
+    # This will request a SSL certs in us-east-1 region with your domain, so can be used together with Cloudfront
+
+    aws acm request-certificate \
+            --region us-east-1 \
+            --domain-name ${domain} \
+            --subject-alternative-name www.${domain} 
+

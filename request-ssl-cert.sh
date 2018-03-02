@@ -11,7 +11,7 @@ fi
 domain=$1
 region=us-east-1
 
-aws --profile yx acm request-certificate \
+aws acm request-certificate \
     --region ${region} \
     --domain-name ${domain} \
     --subject-alternative-name www.${domain} 
