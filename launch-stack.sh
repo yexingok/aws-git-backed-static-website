@@ -6,7 +6,7 @@ email=email@your_email.com
 cert=arn:aws:acm:us-east-1:xxxxx:certificate/fffffff-973f-46ad-8a1d-85d02e1299ac
 
 region=us-west-2
-template=aws-git-backed-static-website-cloudformation-us-west-2.yml
+template=yexing-blog.yml
 stackname=${domain/./-}-$(date +%Y%m%d-%H%M%S)
 
 aws --profile yx cloudformation create-stack \
