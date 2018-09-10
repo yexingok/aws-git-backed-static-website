@@ -2,7 +2,8 @@
 
 domain=example.com
 email=email@your_email.com
-# run request-ssl-cert.sh to get the arn:aws string 
+# run request-ssl-cert.sh to get the arn:aws string, and you can list it with the following command:
+# aws acm --region us-east-1 list-certificates  
 cert=arn:aws:acm:us-east-1:xxxxx:certificate/fffffff-973f-46ad-8a1d-85d02e1299ac
 
 region=us-west-2
