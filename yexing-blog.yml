@@ -65,11 +65,11 @@ Parameters:
   DefaultTTL:
     Type: Number
     Description: "Default Cloudfront distribution TTL in seconds"
-    Default: 600
+    Default: 7200
 
   MinimumTTL:
     Description: "Minimum cache lifetime in seconds for the CloudFront distribution"
-    Default: 300
+    Default: 3600
     Type: Number
 
   PriceClass:
@@ -420,7 +420,7 @@ Resources:
       #TBD: Some static site generators might need more permissions
       Role: !GetAtt LambdaExecutionRole.Arn
       MemorySize: 512
-      Timeout: 100
+      Timeout: 120
       Runtime: !Ref GeneratorLambdaFunctionRuntime
       Handler: !Ref GeneratorLambdaFunctionHandler
       Code:
@@ -433,7 +433,7 @@ Resources:
       Description:  !Sub "Copy Git branch contents to S3 bucket for ${DomainName}"
       Role: !GetAtt LambdaExecutionRole.Arn
       MemorySize: 512
-      Timeout: 100
+      Timeout: 120
       Runtime: python2.7
       Handler: index.handler
       Code:
