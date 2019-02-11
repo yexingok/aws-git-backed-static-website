@@ -19,9 +19,7 @@ aws --profile yx cloudformation update-stack \
     "ParameterKey=DomainName,ParameterValue=$domain" \
     "ParameterKey=NotificationEmail,ParameterValue=$email" \
     "ParameterKey=AWSCertificateArn,ParameterValue=$cert" \
-    "ParameterKey=GeneratorLambdaFunctionS3Key,ParameterValue=lambda/static-site-generator-hugo-0.54.zip" \
-    "ParameterKey=DefaultTTL,ParameterValue=3600" \
-    "ParameterKey=MinimumTTL,ParameterValue=1800" 
+    "ParameterKey=GeneratorLambdaFunctionS3Key,ParameterValue=lambda/static-site-generator-hugo-0.54.zip" 
 
 echo region=$region stackname=$stackname
 
